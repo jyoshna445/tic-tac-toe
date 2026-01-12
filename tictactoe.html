@@ -1,0 +1,238 @@
+<!DOCTYPE html>
+<html>
+<head>
+<title>Tic Tac Toe - Minimax AI</title>
+
+<style>
+*{
+    box-sizing:border-box;
+}
+body{
+    margin:0;
+    min-height:100vh;
+    display:flex;
+    flex-direction:column;
+    align-items:center;
+    justify-content:center;
+    background: radial-gradient(circle at top,#0f2027,#203a43,#2c5364);
+    font-family: "Segoe UI",sans-serif;
+    color:white;
+}
+
+h1{
+    font-size:42px;
+    margin-bottom:10px;
+    text-shadow:0 0 15px cyan;
+}
+
+#status{
+    font-size:20px;
+    margin-bottom:20px;
+    padding:10px 25px;
+    background:rgba(255,255,255,0.15);
+    border-radius:30px;
+    backdrop-filter:blur(10px);
+}
+
+.board{
+    display:grid;
+    grid-template-columns:repeat(3,110px);
+    gap:15px;
+    padding:25px;
+    border-radius:25px;
+    background:rgba(255,255,255,0.08);
+    backdrop-filter:blur(20px);
+    box-shadow:0 0 40px rgba(0,255,255,0.4);
+}
+
+.cell{
+    width:110px;
+    height:110px;
+    background:linear-gradient(145deg,#ffffff,#d9d9d9);
+    border-radius:20px;
+    display:flex;
+    align-items:center;
+    justify-content:center;
+    font-size:55px;
+    font-weight:bold;
+    cursor:pointer;
+    color:#333;
+    transition:0.25s;
+    box-shadow: inset 0 0 10px rgba(0,0,0,0.2),
+                0 10px 20px rgba(0,0,0,0.4);
+}
+
+.cell:hover{
+    transform:scale(1.08);
+    background:linear-gradient(145deg,#00f2ff,#3a7bd5);
+    color:white;
+}
+
+button{
+    margin-top:25px;
+    padding:14px 35px;
+    font-size:18px;
+    border:none;
+    border-radius:40px;
+    background:linear-gradient(135deg,#00f2ff,#3a7bd5);
+    color:white;
+    cursor:pointer;
+    box-shadow:0 0 25px rgba(0,255,255,0.7);
+    transition:0.3s;
+}
+
+button:hover{
+    transform:scale(1.1);
+}
+</style>
+</head>
+
+<body>
+
+<h1>🤖 Tic Tac Toe AI</h1>
+<div id="status">Your Turn (X)</div>
+
+<div class="board">
+    <div class="cell" onclick="humanMove(0)"></div>
+    <div class="cell" onclick="humanMove(1)"></div>
+    <div class="cell" onclick="humanMove(2)"></div>
+    <div class="cell" onclick="humanMove(3)"></div>
+    <div class="cell" onclick="humanMove(4)"></div>
+    <div class="cell" onclick="humanMove(5)"></div>
+    <div class="cell" onclick="humanMove(6)"></div>
+    <div class="cell" onclick="humanMove(7)"></div>
+    <div class="cell" onclick="humanMove(8)"></div>
+</div>
+
+<button onclick="resetGame()">Restart</button>
+
+<script>
+let board=["","","","","","","","",""];
+let human="X";
+let ai="O";
+let gameOver=false;
+
+const winCombos=[
+[0,1,2],[3,4,5],[6,7,8],
+[0,3,6],[1,4,7],[2,5,8],
+[0,4,8],[2,4,6]
+];
+
+function humanMove(i){
+    if(board[i]=="" && !gameOver){
+        board[i]=human;
+        updateUI();
+        if(!checkResult(human)){
+            setTimeout(aiMove,300);
+        }
+    }
+}
+
+function aiMove(){
+    let best=minimax(board,ai);
+    board[best.index]=ai;
+    updateUI();
+    checkResult(ai);
+}
+
+function minimax(newBoard,player){
+    let avail=newBoard.map((v,i)=>v==""?i:null).filter(v=>v!==null);
+
+    if(checkWinner(newBoard,human)) return {score:-10};
+    if(checkWinner(newBoard,ai)) return {score:10};
+    if(avail.length==0) return {score:0};
+
+    let moves=[];
+    for(let i of avail){
+        let move={};
+        move.index=i;
+        newBoard[i]=player;
+
+        let result=minimax(newBoard,player==ai?human:ai);
+        move.score=result.score;
+
+        newBoard[i]="";
+        moves.push(move);
+    }
+
+    let bestMove;
+    if(player==ai){
+        let bestScore=-9999;
+        for(let m of moves){
+            if(m.score>bestScore){
+                bestScore=m.score;
+                bestMove=m;
+            }
+        }
+    }else{
+        let bestScore=9999;
+        for(let m of moves){
+            if(m.score<bestScore){
+                bestScore=m.score;
+                bestMove=m;
+            }
+        }
+    }
+    return bestMove;
+}
+
+function checkWinner(b,p){
+    return winCombos.some(c=>c.every(i=>b[i]==p));
+}
+
+function getWinningCombo(b,p){
+    for(let c of winCombos){
+        if(c.every(i=>b[i]==p)) return c;
+    }
+    return null;
+}
+
+function checkResult(p){
+    let winLine=getWinningCombo(board,p);
+    if(winLine){
+        highlight(winLine);
+        document.getElementById("status").innerText=
+        p==human?"🎉 You Win!":"🤖 AI Wins!";
+        gameOver=true;
+        return true;
+    }
+    if(!board.includes("")){
+        document.getElementById("status").innerText="😐 Draw!";
+        gameOver=true;
+        return true;
+    }
+    document.getElementById("status").innerText=
+    p==human?"AI Thinking...":"Your Turn (X)";
+    return false;
+}
+
+function highlight(combo){
+    combo.forEach(i=>{
+        let cell=document.querySelectorAll(".cell")[i];
+        cell.style.background="linear-gradient(135deg,#00ff99,#00cc66)";
+        cell.style.color="black";
+        cell.style.boxShadow="0 0 30px #00ff99";
+    });
+}
+
+function updateUI(){
+    document.querySelectorAll(".cell").forEach((c,i)=>{
+        c.innerText=board[i];
+    });
+}
+
+function resetGame(){
+    board=["","","","","","","","",""];
+    gameOver=false;
+    updateUI();
+    document.getElementById("status").innerText="Your Turn (X)";
+    document.querySelectorAll(".cell").forEach(c=>{
+        c.style.background="";
+        c.style.color="#333";
+        c.style.boxShadow="";
+    });
+}
+</script>
+
+</body>
+</html>
